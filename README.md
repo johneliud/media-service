@@ -42,38 +42,48 @@ A Spring Boot microservice for managing product media (images) in the marketplac
 - Cache headers for performance (max-age=31536000)
 - Handles missing files gracefully
 
-### Pending Implementations
-
 #### MS-5: Media Deletion API
 - DELETE /api/media/{id} endpoint
-- Seller ownership verification
+- Seller ownership verification before deletion
 - Physical file and database record deletion
+- Handles missing files gracefully
 
 #### MS-6: Seller Media Management
 - GET /api/media/my-media endpoint for sellers
-- Filter by productId support
+- Returns all media for authenticated seller
+- Optional productId filtering support
 
 #### MS-7: Authorization & Access Control
 - JWT validation for protected endpoints
-- Seller ownership verification
-- Public access to retrieval endpoints
+- JwtUtil and JwtAuthenticationFilter implementation
+- Seller ownership verification for media operations
+- Public access to retrieval endpoints (GET /api/media/{id}, GET /api/media/product/{productId})
+- Protected endpoints require authentication (upload, delete, my-media)
+- sellerId stored in Media model for ownership tracking
 
 #### MS-8: File Validation & Security
-- Enhanced file integrity validation
-- Filename sanitization for directory traversal prevention
+- File type validation (MIME type and extension)
+- File size validation (2MB limit)
+- Filename sanitization (UUID-based)
+- Image integrity validation using magic bytes (PNG, JPEG, WEBP)
 
 #### MS-9: Error Handling & Validation
-- Global exception handler
-- Consistent error response format
+- GlobalExceptionHandler with consistent error responses
+- Clear error messages for file type violations
+- Clear error messages for file size violations
+- Graceful storage failure handling
+- ErrorResponse DTO for consistent format
+
+#### MS-11: Unit & Integration Testing
+- MediaService unit tests (upload, delete, retrieval, ownership)
+- FileStorageService unit tests (validation, size limits, file types)
+- 13 tests passing with full coverage
+
+### Pending Implementations
 
 #### MS-10: Kafka Integration
 - Product deletion event consumer
 - Cascading media deletion
-
-#### MS-11: Unit & Integration Testing
-- Service layer tests
-- File upload/validation tests
-- Ownership verification tests
 
 ## Tech Stack
 
@@ -139,6 +149,7 @@ The service will start on `http://localhost:8081`
 ### Upload Media
 ```http
 POST /api/media/upload
+Authorization: Bearer <jwt_token>
 Content-Type: multipart/form-data
 
 Parameters:
@@ -152,7 +163,8 @@ Response: 201 Created
   "data": {
     "id": "65f8a9b2c3d4e5f6g7h8i9j0",
     "imagePath": "abc-123-def-456.jpg",
-    "productId": "prod123"
+    "productId": "prod123",
+    "sellerId": "seller123"
   }
 }
 ```
@@ -180,16 +192,44 @@ Response: 200 OK
     {
       "id": "65f8a9b2c3d4e5f6g7h8i9j0",
       "imagePath": "abc-123-def-456.jpg",
-      "productId": "prod123"
+      "productId": "prod123",
+      "sellerId": "seller123"
     }
   ]
+}
+```
+
+### Delete Media
+```http
+DELETE /api/media/{id}
+Authorization: Bearer <jwt_token>
+
+Response: 200 OK
+{
+  "success": true,
+  "message": "Media deleted successfully",
+  "data": null
+}
+```
+
+### Get Seller Media
+```http
+GET /api/media/my-media?productId={productId}
+Authorization: Bearer <jwt_token>
+
+Response: 200 OK
+{
+  "success": true,
+  "message": "Media retrieved successfully",
+  "data": [...]
 }
 ```
 
 ## Testing
 
 The project includes:
-- Context load tests
-- MongoDB connection tests
+- MediaService unit tests (upload, delete, retrieval, ownership verification)
+- FileStorageService unit tests (file validation, size limits, image integrity)
+- 13 tests with full coverage
 
 Run tests with: `./mvnw test`
