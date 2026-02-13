@@ -11,4 +11,5 @@ public class MediaResponse {
     private String id;
     private String imagePath;
     private String productId;
+    private String sellerId;
 }
