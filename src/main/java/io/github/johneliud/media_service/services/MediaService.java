@@ -35,6 +35,30 @@ public class MediaService {
         return toMediaResponse(savedMedia);
     }
 
+    public MediaResponse getMediaById(String id) {
+        log.info("Fetching media by ID: {}", id);
+        
+        Media media = mediaRepository.findById(id)
+            .orElseThrow(() -> {
+                log.warn("Media not found with ID: {}", id);
+                return new IllegalArgumentException("Media not found");
+            });
+        
+        log.info("Media retrieved successfully: {}", id);
+        return toMediaResponse(media);
+    }
+
+    public java.util.List<MediaResponse> getMediaByProductId(String productId) {
+        log.info("Fetching media for productId: {}", productId);
+        
+        java.util.List<Media> mediaList = mediaRepository.findByProductId(productId);
+        
+        log.info("Retrieved {} media items for productId: {}", mediaList.size(), productId);
+        return mediaList.stream()
+            .map(this::toMediaResponse)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
     private MediaResponse toMediaResponse(Media media) {
         return new MediaResponse(
             media.getId(),
