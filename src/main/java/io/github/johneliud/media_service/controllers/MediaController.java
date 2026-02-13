@@ -12,6 +12,21 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Path;
+import java.util.List;
+import io.github.johneliud.media_service.services.MediaService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,11 +44,13 @@ public class MediaController {
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<MediaResponse>> uploadMedia(
             @RequestPart("image") MultipartFile image,
-            @RequestParam("productId") String productId) {
+            @RequestParam("productId") String productId,
+            Authentication authentication) {
         
-        log.info("POST /api/media/upload - Media upload request for productId: {}", productId);
+        String sellerId = (String) authentication.getPrincipal();
+        log.info("POST /api/media/upload - Media upload request for productId: {} by seller: {}", productId, sellerId);
         
-        MediaResponse mediaResponse = mediaService.uploadMedia(image, productId);
+        MediaResponse mediaResponse = mediaService.uploadMedia(image, productId, sellerId);
         
         log.info("POST /api/media/upload - Media uploaded successfully: {}", mediaResponse.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -78,10 +95,14 @@ public class MediaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteMedia(@PathVariable String id) {
-        log.info("DELETE /api/media/{} - Media deletion request", id);
+    public ResponseEntity<ApiResponse<Void>> deleteMedia(
+            @PathVariable String id,
+            Authentication authentication) {
         
-        mediaService.deleteMedia(id);
+        String sellerId = (String) authentication.getPrincipal();
+        log.info("DELETE /api/media/{} - Media deletion request by seller: {}", id, sellerId);
+        
+        mediaService.deleteMedia(id, sellerId);
         
         log.info("DELETE /api/media/{} - Media deleted successfully", id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Media deleted successfully", null));
@@ -90,8 +111,9 @@ public class MediaController {
     @GetMapping("/my-media")
     public ResponseEntity<ApiResponse<List<MediaResponse>>> getSellerMedia(
             @RequestParam(required = false) String productId,
-            @RequestParam String sellerId) {
+            Authentication authentication) {
         
+        String sellerId = (String) authentication.getPrincipal();
         log.info("GET /api/media/my-media - Seller media request for sellerId: {}, productId: {}", sellerId, productId);
         
         List<MediaResponse> mediaList = mediaService.getSellerMedia(sellerId, productId);
