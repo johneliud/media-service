@@ -19,4 +19,7 @@ public class Media {
     
     @Indexed
     private String productId;
+    
+    @Indexed
+    private String sellerId;
 }
