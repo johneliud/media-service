@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface MediaRepository extends MongoRepository<Media, String> {
     List<Media> findByProductId(String productId);
+    List<Media> findBySellerId(String sellerId);
+    List<Media> findBySellerIdAndProductId(String sellerId, String productId);
 }
