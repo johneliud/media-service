@@ -15,8 +15,8 @@ public class MediaService {
     private final MediaRepository mediaRepository;
     private final FileStorageService fileStorageService;
 
-    public MediaResponse uploadMedia(MultipartFile file, String productId) {
-        log.info("Attempting to upload media for productId: {}", productId);
+    public MediaResponse uploadMedia(MultipartFile file, String productId, String sellerId) {
+        log.info("Attempting to upload media for productId: {}, sellerId: {}", productId, sellerId);
 
         if (productId == null || productId.isBlank()) {
             log.warn("Media upload failed: productId is required");
@@ -28,6 +28,7 @@ public class MediaService {
         Media media = new Media();
         media.setImagePath(imagePath);
         media.setProductId(productId);
+        media.setSellerId(sellerId);
 
         Media savedMedia = mediaRepository.save(media);
         log.info("Media uploaded successfully with ID: {} for productId: {}", savedMedia.getId(), productId);
@@ -59,14 +60,19 @@ public class MediaService {
             .collect(java.util.stream.Collectors.toList());
     }
 
-    public void deleteMedia(String id) {
-        log.info("Attempting to delete media with ID: {}", id);
+    public void deleteMedia(String id, String sellerId) {
+        log.info("Attempting to delete media with ID: {} by seller: {}", id, sellerId);
         
         Media media = mediaRepository.findById(id)
             .orElseThrow(() -> {
                 log.warn("Media deletion failed: Media not found - {}", id);
                 return new IllegalArgumentException("Media not found");
             });
+        
+        if (!media.getSellerId().equals(sellerId)) {
+            log.warn("Media deletion failed: Seller {} does not own media {}", sellerId, id);
+            throw new IllegalArgumentException("You do not have permission to delete this media");
+        }
         
         fileStorageService.deleteMedia(media.getImagePath());
         mediaRepository.deleteById(id);
@@ -77,25 +83,25 @@ public class MediaService {
     public java.util.List<MediaResponse> getSellerMedia(String sellerId, String productId) {
         log.info("Fetching media for sellerId: {}, productId filter: {}", sellerId, productId);
         
+        java.util.List<Media> mediaList;
         if (productId != null && !productId.isBlank()) {
-            java.util.List<Media> mediaList = mediaRepository.findByProductId(productId);
-            log.info("Retrieved {} media items for productId: {}", mediaList.size(), productId);
-            return mediaList.stream()
-                .map(this::toMediaResponse)
-                .collect(java.util.stream.Collectors.toList());
+            mediaList = mediaRepository.findBySellerIdAndProductId(sellerId, productId);
+        } else {
+            mediaList = mediaRepository.findBySellerId(sellerId);
         }
         
-        // TODO: Filter by sellerId when product-service integration is added
-        // For now, return empty list as we can't verify seller ownership without product data
-        log.warn("Seller media retrieval requires product-service integration");
-        return java.util.Collections.emptyList();
+        log.info("Retrieved {} media items for sellerId: {}", mediaList.size(), sellerId);
+        return mediaList.stream()
+            .map(this::toMediaResponse)
+            .collect(java.util.stream.Collectors.toList());
     }
 
     private MediaResponse toMediaResponse(Media media) {
         return new MediaResponse(
             media.getId(),
             media.getImagePath(),
-            media.getProductId()
+            media.getProductId(),
+            media.getSellerId()
         );
     }
 }
