@@ -146,7 +146,20 @@ The service will start on `http://localhost:8081`
 
 ## API Documentation
 
-### Upload Media
+See [API_TESTING.md](docs/API_TESTING.md) for detailed endpoint documentation with Postman/Insomnia examples and cURL commands.
+
+### Quick Reference
+
+**Public Endpoints:**
+- `GET /api/media/{id}` - Get media file
+- `GET /api/media/product/{productId}` - Get all media for product
+
+**Protected Endpoints (Require JWT):**
+- `POST /api/media/upload` - Upload media (SELLER only)
+- `DELETE /api/media/{id}` - Delete media (Owner only)
+- `GET /api/media/my-media` - Get seller's media (SELLER only)
+
+## Testing
 ```http
 POST /api/media/upload
 Authorization: Bearer <jwt_token>
