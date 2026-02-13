@@ -77,6 +77,29 @@ public class MediaController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Media retrieved successfully", mediaList));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteMedia(@PathVariable String id) {
+        log.info("DELETE /api/media/{} - Media deletion request", id);
+        
+        mediaService.deleteMedia(id);
+        
+        log.info("DELETE /api/media/{} - Media deleted successfully", id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Media deleted successfully", null));
+    }
+
+    @GetMapping("/my-media")
+    public ResponseEntity<ApiResponse<List<MediaResponse>>> getSellerMedia(
+            @RequestParam(required = false) String productId,
+            @RequestParam String sellerId) {
+        
+        log.info("GET /api/media/my-media - Seller media request for sellerId: {}, productId: {}", sellerId, productId);
+        
+        List<MediaResponse> mediaList = mediaService.getSellerMedia(sellerId, productId);
+        
+        log.info("GET /api/media/my-media - Retrieved {} media items", mediaList.size());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Media retrieved successfully", mediaList));
+    }
+
     private String determineContentType(String filename) {
         String extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
         return switch (extension) {
