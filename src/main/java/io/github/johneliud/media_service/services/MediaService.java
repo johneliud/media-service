@@ -59,6 +59,38 @@ public class MediaService {
             .collect(java.util.stream.Collectors.toList());
     }
 
+    public void deleteMedia(String id) {
+        log.info("Attempting to delete media with ID: {}", id);
+        
+        Media media = mediaRepository.findById(id)
+            .orElseThrow(() -> {
+                log.warn("Media deletion failed: Media not found - {}", id);
+                return new IllegalArgumentException("Media not found");
+            });
+        
+        fileStorageService.deleteMedia(media.getImagePath());
+        mediaRepository.deleteById(id);
+        
+        log.info("Media deleted successfully: {}", id);
+    }
+
+    public java.util.List<MediaResponse> getSellerMedia(String sellerId, String productId) {
+        log.info("Fetching media for sellerId: {}, productId filter: {}", sellerId, productId);
+        
+        if (productId != null && !productId.isBlank()) {
+            java.util.List<Media> mediaList = mediaRepository.findByProductId(productId);
+            log.info("Retrieved {} media items for productId: {}", mediaList.size(), productId);
+            return mediaList.stream()
+                .map(this::toMediaResponse)
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        // TODO: Filter by sellerId when product-service integration is added
+        // For now, return empty list as we can't verify seller ownership without product data
+        log.warn("Seller media retrieval requires product-service integration");
+        return java.util.Collections.emptyList();
+    }
+
     private MediaResponse toMediaResponse(Media media) {
         return new MediaResponse(
             media.getId(),
