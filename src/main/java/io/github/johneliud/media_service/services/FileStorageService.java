@@ -86,6 +86,10 @@ public class FileStorageService {
         }
     }
 
+    public Path getMediaPath(String filename) {
+        return Paths.get(uploadDir).resolve(filename);
+    }
+
     private String getFileExtension(String filename) {
         if (filename == null || !filename.contains(".")) {
             return "";
