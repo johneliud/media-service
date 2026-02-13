@@ -53,6 +53,8 @@ public class FileStorageService {
             throw new IllegalArgumentException("Only PNG, JPG, JPEG, and WEBP files are allowed");
         }
 
+        validateImageIntegrity(file);
+
         try {
             Path uploadPath = Paths.get(uploadDir);
             if (!Files.exists(uploadPath)) {
@@ -70,6 +72,49 @@ public class FileStorageService {
             log.error("Failed to store media file", e);
             throw new RuntimeException("Failed to store file", e);
         }
+    }
+
+    private void validateImageIntegrity(MultipartFile file) {
+        try {
+            byte[] bytes = file.getBytes();
+            if (bytes.length < 8) {
+                log.warn("Image validation failed: File too small to be a valid image");
+                throw new IllegalArgumentException("Invalid image file");
+            }
+
+            // Check magic bytes for common image formats
+            if (isPNG(bytes) || isJPEG(bytes) || isWEBP(bytes)) {
+                return;
+            }
+
+            log.warn("Image validation failed: File does not match expected image format");
+            throw new IllegalArgumentException("Invalid image file");
+        } catch (IOException e) {
+            log.error("Failed to validate image integrity", e);
+            throw new RuntimeException("Failed to validate image", e);
+        }
+    }
+
+    private boolean isPNG(byte[] bytes) {
+        return bytes.length >= 8 &&
+               bytes[0] == (byte) 0x89 && bytes[1] == 0x50 &&
+               bytes[2] == 0x4E && bytes[3] == 0x47 &&
+               bytes[4] == 0x0D && bytes[5] == 0x0A &&
+               bytes[6] == 0x1A && bytes[7] == 0x0A;
+    }
+
+    private boolean isJPEG(byte[] bytes) {
+        return bytes.length >= 3 &&
+               bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8 &&
+               bytes[2] == (byte) 0xFF;
+    }
+
+    private boolean isWEBP(byte[] bytes) {
+        return bytes.length >= 12 &&
+               bytes[0] == 0x52 && bytes[1] == 0x49 &&
+               bytes[2] == 0x46 && bytes[3] == 0x46 &&
+               bytes[8] == 0x57 && bytes[9] == 0x45 &&
+               bytes[10] == 0x42 && bytes[11] == 0x50;
     }
 
     public void deleteMedia(String filename) {
