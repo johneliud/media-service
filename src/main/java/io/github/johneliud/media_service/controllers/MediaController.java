@@ -12,21 +12,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.nio.file.Path;
-import java.util.List;
-import io.github.johneliud.media_service.services.MediaService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,9 +30,13 @@ public class MediaController {
     public ResponseEntity<ApiResponse<MediaResponse>> uploadMedia(
             @RequestPart("image") MultipartFile image,
             @RequestParam("productId") String productId,
-            Authentication authentication) {
+            @RequestHeader("X-User-Id") String sellerId,
+            @RequestHeader("X-User-Role") String role) {
         
-        String sellerId = (String) authentication.getPrincipal();
+        if (!role.equals("ROLE_SELLER")) {
+            throw new IllegalArgumentException("Only sellers can upload media");
+        }
+        
         log.info("POST /api/media/upload - Media upload request for productId: {} by seller: {}", productId, sellerId);
         
         MediaResponse mediaResponse = mediaService.uploadMedia(image, productId, sellerId);
@@ -97,9 +86,13 @@ public class MediaController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteMedia(
             @PathVariable String id,
-            Authentication authentication) {
+            @RequestHeader("X-User-Id") String sellerId,
+            @RequestHeader("X-User-Role") String role) {
         
-        String sellerId = (String) authentication.getPrincipal();
+        if (!role.equals("ROLE_SELLER")) {
+            throw new IllegalArgumentException("Only sellers can delete media");
+        }
+        
         log.info("DELETE /api/media/{} - Media deletion request by seller: {}", id, sellerId);
         
         mediaService.deleteMedia(id, sellerId);
@@ -111,9 +104,13 @@ public class MediaController {
     @GetMapping("/my-media")
     public ResponseEntity<ApiResponse<List<MediaResponse>>> getSellerMedia(
             @RequestParam(required = false) String productId,
-            Authentication authentication) {
+            @RequestHeader("X-User-Id") String sellerId,
+            @RequestHeader("X-User-Role") String role) {
         
-        String sellerId = (String) authentication.getPrincipal();
+        if (!role.equals("ROLE_SELLER")) {
+            throw new IllegalArgumentException("Only sellers can access this endpoint");
+        }
+        
         log.info("GET /api/media/my-media - Seller media request for sellerId: {}, productId: {}", sellerId, productId);
         
         List<MediaResponse> mediaList = mediaService.getSellerMedia(sellerId, productId);
@@ -126,8 +123,7 @@ public class MediaController {
         String extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
         return switch (extension) {
             case "png" -> "image/png";
-            case "jpg", "" -> "image/jpg";
-            case "jpeg" -> "image/jpeg";
+            case "jpg", "jpeg" -> "image/jpeg";
             case "webp" -> "image/webp";
             default -> "application/octet-stream";
         };
