@@ -35,5 +35,6 @@ build/
 ### Others ###
 /guide/
 /docs/
+/uploads/
 
 src/main/resources/application-secrets.properties
