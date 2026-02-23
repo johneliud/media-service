@@ -33,7 +33,7 @@ public class MediaController {
             @RequestHeader("X-User-Id") String sellerId,
             @RequestHeader("X-User-Role") String role) {
         
-        if (!role.equals("ROLE_SELLER")) {
+        if (!role.equals("SELLER")) {
             throw new IllegalArgumentException("Only sellers can upload media");
         }
         
@@ -89,7 +89,7 @@ public class MediaController {
             @RequestHeader("X-User-Id") String sellerId,
             @RequestHeader("X-User-Role") String role) {
         
-        if (!role.equals("ROLE_SELLER")) {
+        if (!role.equals("SELLER")) {
             throw new IllegalArgumentException("Only sellers can delete media");
         }
         
@@ -107,7 +107,7 @@ public class MediaController {
             @RequestHeader("X-User-Id") String sellerId,
             @RequestHeader("X-User-Role") String role) {
         
-        if (!role.equals("ROLE_SELLER")) {
+        if (!role.equals("SELLER")) {
             throw new IllegalArgumentException("Only sellers can access this endpoint");
         }
         
