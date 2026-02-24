@@ -1,248 +1,223 @@
 # Media Service
 
-A Spring Boot microservice for managing product media (images) in the marketplace, supporting upload, retrieval, and deletion of product images with file validation and storage.
+Microservice responsible for media file management and image serving for products.
 
-## Table of Contents
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [API Documentation](#api-documentation)
-- [Testing](#testing)
+## Overview
+
+- **Port**: 8081
+- **Technology**: Spring Boot 3.x
+- **Database**: MongoDB collection `media`
+- **Storage**: Local filesystem
+- **Purpose**: Image upload, storage, and serving
 
 ## Features
 
-### Completed Implementations
+### Media Upload
+- Upload product images (sellers only)
+- Supported formats: PNG, JPG, JPEG, WEBP
+- Max file size: 2MB
+- UUID-based file naming
+- Product association
 
-#### MS-1: Database Schema Design & Implementation
-- Media model with MongoDB document mapping
-- Fields: id, imagePath, productId
-- Indexed productId for query optimization
-- MediaRepository with productId lookup methods
+### Media Retrieval
+- Get media by ID (public)
+- Get media by product ID (public)
+- Get seller's media (sellers only)
+- Serve images with proper Content-Type
 
-#### MS-2: Media Upload API
-- POST /api/media/upload endpoint
-- Accepts image file with productId
-- File type validation (PNG, JPG, JPEG, GIF, WEBP)
-- MIME type verification
-- File size limit (2MB)
-- Unique filename generation with UUID
-- Comprehensive logging
+### Media Deletion
+- Delete media (sellers only)
+- Ownership verification
+- File cleanup from filesystem
 
-#### MS-3: File Storage Implementation
-- Local filesystem storage mechanism
-- UUID-based unique filenames to prevent collisions
-- Configurable upload directory
-- File path stored in Media entity
-- Ready for cloud storage migration (Cloudinary, S3)
+## API Endpoints
 
-#### MS-4: Media Retrieval API
-- GET /api/media/{id} endpoint to retrieve media file
-- GET /api/media/product/{productId} endpoint for all product media
-- Proper content-type headers for images
-- Cache headers for performance (max-age=31536000)
-- Handles missing files gracefully
+### Public Endpoints
 
-#### MS-5: Media Deletion API
-- DELETE /api/media/{id} endpoint
-- Seller ownership verification before deletion
-- Physical file and database record deletion
-- Handles missing files gracefully
-
-#### MS-6: Seller Media Management
-- GET /api/media/my-media endpoint for sellers
-- Returns all media for authenticated seller
-- Optional productId filtering support
-
-#### MS-7: Authorization & Access Control
-- JWT validation for protected endpoints
-- JwtUtil and JwtAuthenticationFilter implementation
-- Seller ownership verification for media operations
-- Public access to retrieval endpoints (GET /api/media/{id}, GET /api/media/product/{productId})
-- Protected endpoints require authentication (upload, delete, my-media)
-- sellerId stored in Media model for ownership tracking
-
-#### MS-8: File Validation & Security
-- File type validation (MIME type and extension)
-- File size validation (2MB limit)
-- Filename sanitization (UUID-based)
-- Image integrity validation using magic bytes (PNG, JPEG, WEBP)
-
-#### MS-9: Error Handling & Validation
-- GlobalExceptionHandler with consistent error responses
-- Clear error messages for file type violations
-- Clear error messages for file size violations
-- Graceful storage failure handling
-- ErrorResponse DTO for consistent format
-
-#### MS-11: Unit & Integration Testing
-- MediaService unit tests (upload, delete, retrieval, ownership)
-- FileStorageService unit tests (validation, size limits, file types)
-- 13 tests passing with full coverage
-
-### Pending Implementations
-
-#### MS-10: Kafka Integration
-- Product deletion event consumer
-- Cascading media deletion
-
-## Tech Stack
-
-- **Java 25**
-- **Spring Boot 4.0.2**
-- **MongoDB** - Database
-- **Spring Data MongoDB** - Data access
-- **Lombok** - Boilerplate reduction
-- **Maven** - Build tool
-
-## Getting Started
-
-### Prerequisites
-
-- Java 25 or higher
-- Maven 3.6+
-- MongoDB Atlas account or local MongoDB instance
-
-### Clone Repository
-
-```bash
-git clone https://github.com/johneliud/media-service.git
-cd media-service
-```
-
-### Configuration
-
-Create and Update `src/main/resources/application-secrets.properties`:
-
-```properties
-spring.mongodb.uri=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>
-# Server Configuration
-server.port=8081
-# JWT Configuration
-jwt.secret=<your-secret-key>
-jwt.expiration=86400000
-# File upload configuration
-spring.servlet.multipart.max-file-size=2MB
-spring.servlet.multipart.max-request-size=2MB
-file.upload.dir=uploads/media
-```
-
-### Build & Run
-
-```bash
-# Build
-./mvnw clean install
-
-# Run
-./mvnw spring-boot:run
-```
-
-The service will start on `http://localhost:8081`
-
-### Run Tests
-
-```bash
-./mvnw test
-```
-
-## API Documentation
-
-See [API_TESTING.md](docs/API_TESTING.md) for detailed endpoint documentation with Postman/Insomnia examples and cURL commands.
-
-### Quick Reference
-
-**Public Endpoints:**
-- `GET /api/media/{id}` - Get media file
-- `GET /api/media/product/{productId}` - Get all media for product
-
-**Protected Endpoints (Require JWT):**
-- `POST /api/media/upload` - Upload media (SELLER only)
-- `DELETE /api/media/{id}` - Delete media (Owner only)
-- `GET /api/media/my-media` - Get seller's media (SELLER only)
-
-## Testing
-```http
-POST /api/media/upload
-Authorization: Bearer <jwt_token>
-Content-Type: multipart/form-data
-
-Parameters:
-- image: MultipartFile (required)
-- productId: String (required)
-
-Response: 201 Created
-{
-  "success": true,
-  "message": "Media uploaded successfully",
-  "data": {
-    "id": "65f8a9b2c3d4e5f6g7h8i9j0",
-    "imagePath": "abc-123-def-456.jpg",
-    "productId": "prod123",
-    "sellerId": "seller123"
-  }
-}
-```
-
-### Get Media File
+#### Get Media by ID
 ```http
 GET /api/media/{id}
-
-Response: 200 OK
-Content-Type: image/jpeg
-Cache-Control: max-age=31536000
-
-[Binary image data]
 ```
 
-### Get Product Media
+Returns image with Content-Type: image/png, image/jpeg, or image/webp.
+
+#### Get Media by Product ID
 ```http
 GET /api/media/product/{productId}
+```
 
-Response: 200 OK
+Response:
+```json
 {
   "success": true,
   "message": "Media retrieved successfully",
   "data": [
     {
-      "id": "65f8a9b2c3d4e5f6g7h8i9j0",
-      "imagePath": "abc-123-def-456.jpg",
-      "productId": "prod123",
-      "sellerId": "seller123"
+      "id": "media-id",
+      "imagePath": "uuid-filename.png",
+      "productId": "product-id",
+      "sellerId": "seller-id"
     }
   ]
 }
 ```
 
-### Delete Media
-```http
-DELETE /api/media/{id}
-Authorization: Bearer <jwt_token>
+### Protected Endpoints (Sellers Only)
 
-Response: 200 OK
+Require `Authorization: Bearer <token>` header and X-User-Id, X-User-Role headers (added by gateway).
+
+#### Upload Media
+```http
+POST /api/media/upload
+Content-Type: multipart/form-data
+
+image: <file>
+productId: <product-id>
+```
+
+Response:
+```json
 {
   "success": true,
-  "message": "Media deleted successfully",
+  "message": "Media uploaded successfully",
+  "data": {
+    "id": "media-id",
+    "imagePath": "uuid-filename.png",
+    "productId": "product-id",
+    "sellerId": "seller-id"
+  }
+}
+```
+
+#### Get Seller's Media
+```http
+GET /api/media/my-media?productId=<product-id>
+```
+
+Query Parameters:
+- `productId` - Optional filter by product
+
+#### Delete Media
+```http
+DELETE /api/media/{id}
+```
+
+## Data Model
+
+### Media
+```json
+{
+  "id": "string",
+  "imagePath": "string (UUID-based filename)",
+  "productId": "string",
+  "sellerId": "string"
+}
+```
+
+## Configuration
+
+### Application Properties
+```properties
+server.port=8081
+spring.data.mongodb.uri=mongodb://localhost:27017/buy01
+spring.servlet.multipart.max-file-size=2MB
+spring.servlet.multipart.max-request-size=2MB
+file.upload-dir=uploads/media
+```
+
+## Running the Service
+
+```bash
+cd backend/media-service
+mvn spring-boot:run
+```
+
+Ensure MongoDB is running on port 27017.
+
+## File Storage
+
+Images are stored in:
+```
+backend/media-service/uploads/media/
+```
+
+File naming convention:
+```
+{uuid}.{extension}
+```
+
+Example: `9a496e2e-f203-479b-8e04-4b4964cc206a.png`
+
+## Image Serving
+
+Images are served with:
+- Proper Content-Type header (image/png, image/jpeg, image/webp)
+- Cache-Control header: max-age=31536000 (1 year)
+- Accept-Ranges header for partial content support
+
+## Validation
+
+### File Type Validation
+Allowed MIME types:
+- image/png
+- image/jpeg
+- image/jpg
+- image/webp
+
+### File Size Validation
+- Maximum: 2MB (2,097,152 bytes)
+- Enforced at Spring Boot level
+
+## Security
+
+- Only sellers can upload media
+- Only sellers can delete media
+- Sellers can only delete their own media
+- Ownership verified via sellerId field
+- File type validation prevents malicious uploads
+- File size limit prevents DoS attacks
+
+## Dependencies
+
+- Spring Boot 3.x
+- Spring Data MongoDB
+- Spring Web (Multipart)
+- Lombok
+
+## Error Responses
+
+```json
+{
+  "success": false,
+  "message": "Error message",
   "data": null
 }
 ```
 
-### Get Seller Media
-```http
-GET /api/media/my-media?productId={productId}
-Authorization: Bearer <jwt_token>
+Common errors:
+- 400 - Invalid file type or size
+- 403 - Not authorized (not a seller or not media owner)
+- 404 - Media not found
+- 413 - File too large
 
-Response: 200 OK
-{
-  "success": true,
-  "message": "Media retrieved successfully",
-  "data": [...]
-}
+## Usage Example
+
+### Upload Image Flow
+1. Seller creates a product via Product Service
+2. Seller uploads image via Media Service with productId
+3. Media Service stores file and creates database record
+4. Frontend displays image using media ID
+
+### Display Image Flow
+1. Frontend requests product list
+2. For each product, request media by productId
+3. Get first media's ID
+4. Display image using `/api/media/{id}` endpoint
+
+## Database Indexes
+
+Recommended indexes for performance:
+```javascript
+db.media.createIndex({ "productId": 1 })
+db.media.createIndex({ "sellerId": 1 })
 ```
-
-## Testing
-
-The project includes:
-- MediaService unit tests (upload, delete, retrieval, ownership verification)
-- FileStorageService unit tests (file validation, size limits, image integrity)
-- 13 tests with full coverage
-
-Run tests with: `./mvnw test`
