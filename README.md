@@ -182,7 +182,40 @@ Allowed MIME types:
 - Spring Boot 3.x
 - Spring Data MongoDB
 - Spring Web (Multipart)
+- Spring Kafka
 - Lombok
+
+## Kafka Integration
+
+### Consumer Configuration
+Listens for product deletion events and automatically deletes associated media.
+
+**Topic**: `product-deleted`
+**Consumer Group**: `media-service-group`
+
+**Event Structure**:
+```json
+{
+  "productId": "string",
+  "timestamp": "ISO-8601 datetime"
+}
+```
+
+### Automatic Cleanup Flow
+1. Product Service publishes `ProductDeletedEvent` to Kafka
+2. Media Service consumes the event
+3. Media Service queries all media with matching productId
+4. Media Service deletes files from filesystem
+5. Media Service removes records from database
+
+### Configuration
+```properties
+spring.kafka.bootstrap-servers=localhost:9092
+spring.kafka.consumer.group-id=media-service-group
+spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
+spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer
+spring.kafka.consumer.properties.spring.json.trusted.packages=*
+```
 
 ## Error Responses
 
