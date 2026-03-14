@@ -38,3 +38,5 @@ build/
 /uploads/
 
 src/main/resources/application-secrets.properties
+
+*.jar
