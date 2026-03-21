@@ -2,6 +2,7 @@ package io.github.johneliud.media_service.services;
 
 import io.github.johneliud.media_service.dto.MediaResponse;
 import io.github.johneliud.media_service.models.Media;
+import io.github.johneliud.media_service.repositories.ActiveOrderProductRepository;
 import io.github.johneliud.media_service.repositories.MediaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,9 @@ class MediaServiceTest {
 
     @Mock
     private FileStorageService fileStorageService;
+
+    @Mock
+    private ActiveOrderProductRepository activeOrderProductRepository;
 
     @InjectMocks
     private MediaService mediaService;
@@ -70,6 +74,31 @@ class MediaServiceTest {
     @Test
     void deleteMedia_Success() {
         when(mediaRepository.findById("media123")).thenReturn(Optional.of(testMedia));
+        when(activeOrderProductRepository.existsByProductIdsContaining("product123")).thenReturn(false);
+
+        mediaService.deleteMedia("media123", "seller123");
+
+        verify(fileStorageService).deleteMedia("test-image.jpg");
+        verify(mediaRepository).deleteById("media123");
+    }
+
+    @Test
+    void deleteMedia_ProductInActiveOrder_ThrowsException() {
+        when(mediaRepository.findById("media123")).thenReturn(Optional.of(testMedia));
+        when(activeOrderProductRepository.existsByProductIdsContaining("product123")).thenReturn(true);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            mediaService.deleteMedia("media123", "seller123");
+        });
+        assertEquals("Cannot delete media for a product that has active orders", exception.getMessage());
+        verify(fileStorageService, never()).deleteMedia(any());
+        verify(mediaRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteMedia_ProductNotInActiveOrder_Succeeds() {
+        when(mediaRepository.findById("media123")).thenReturn(Optional.of(testMedia));
+        when(activeOrderProductRepository.existsByProductIdsContaining("product123")).thenReturn(false);
 
         mediaService.deleteMedia("media123", "seller123");
 
