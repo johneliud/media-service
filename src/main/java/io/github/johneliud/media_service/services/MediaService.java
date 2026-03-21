@@ -2,6 +2,7 @@ package io.github.johneliud.media_service.services;
 
 import io.github.johneliud.media_service.dto.MediaResponse;
 import io.github.johneliud.media_service.models.Media;
+import io.github.johneliud.media_service.repositories.ActiveOrderProductRepository;
 import io.github.johneliud.media_service.repositories.MediaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class MediaService {
     private final MediaRepository mediaRepository;
     private final FileStorageService fileStorageService;
+    private final ActiveOrderProductRepository activeOrderProductRepository;
 
     public MediaResponse uploadMedia(MultipartFile file, String productId, String sellerId) {
         log.info("Attempting to upload media for productId: {}, sellerId: {}", productId, sellerId);
@@ -73,7 +75,12 @@ public class MediaService {
             log.warn("Media deletion failed: Seller {} does not own media {}", sellerId, id);
             throw new IllegalArgumentException("You do not have permission to delete this media");
         }
-        
+
+        if (activeOrderProductRepository.existsByProductIdsContaining(media.getProductId())) {
+            log.warn("Media deletion blocked: product {} has active orders", media.getProductId());
+            throw new IllegalArgumentException("Cannot delete media for a product that has active orders");
+        }
+
         fileStorageService.deleteMedia(media.getImagePath());
         mediaRepository.deleteById(id);
         
