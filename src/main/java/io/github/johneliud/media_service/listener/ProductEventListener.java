@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -18,8 +19,17 @@ public class ProductEventListener {
 
     private final MediaRepository mediaRepository;
     private final FileStorageService fileStorageService;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "product-deleted", groupId = "media-service")
+    public void handleProductDeletedMessage(String message) {
+        try {
+            handleProductDeleted(objectMapper.readValue(message, ProductDeletedEvent.class));
+        } catch (Exception e) {
+            log.error("Failed to deserialize product-deleted event: {}", e.getMessage());
+        }
+    }
+
     public void handleProductDeleted(ProductDeletedEvent event) {
         log.info("Received product-deleted event for productId: {}", event.getProductId());
         
