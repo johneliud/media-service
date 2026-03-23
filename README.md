@@ -5,8 +5,8 @@ Microservice responsible for media file management and image serving for product
 ## Overview
 
 - **Port**: 8081
-- **Technology**: Spring Boot 3.x
-- **Database**: MongoDB collection `media`
+- **Technology**: Spring Boot 4.0.3
+- **Database**: MongoDB Atlas (collection `media`)
 - **Storage**: Local filesystem
 - **Purpose**: Image upload, storage, and serving
 
@@ -179,10 +179,10 @@ Allowed MIME types:
 
 ## Dependencies
 
-- Spring Boot 3.x
+- Spring Boot 4.0.3
 - Spring Data MongoDB
 - Spring Web (Multipart)
-- Spring Kafka
+- Spring Kafka 4.0.3
 - Lombok
 
 ## Kafka Integration
@@ -191,7 +191,7 @@ Allowed MIME types:
 Listens for product deletion events and automatically deletes associated media.
 
 **Topic**: `product-deleted`
-**Consumer Group**: `media-service-group`
+**Consumer Group**: `media-service`
 
 **Event Structure**:
 ```json
@@ -209,12 +209,12 @@ Listens for product deletion events and automatically deletes associated media.
 5. Media Service removes records from database
 
 ### Configuration
+
+Consumer configuration is defined in `KafkaConsumerConfig.java` using `StringDeserializer` and `StringJsonMessageConverter` for Jackson-3.x-compatible deserialization. Consumer error handling uses `DefaultErrorHandler` with `FixedBackOff(1000ms, 3 retries)`.
+
 ```properties
 spring.kafka.bootstrap-servers=localhost:9092
-spring.kafka.consumer.group-id=media-service-group
-spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer
-spring.kafka.consumer.properties.spring.json.trusted.packages=*
+spring.kafka.consumer.group-id=media-service
 ```
 
 ## Error Responses
