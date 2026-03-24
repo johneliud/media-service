@@ -119,7 +119,7 @@ DELETE /api/media/{id}
 ### Application Properties
 ```properties
 server.port=8081
-spring.data.mongodb.uri=mongodb://localhost:27017/buy01
+spring.mongodb.uri=mongodb://localhost:27017/buy01
 spring.servlet.multipart.max-file-size=2MB
 spring.servlet.multipart.max-request-size=2MB
 file.upload-dir=uploads/media
