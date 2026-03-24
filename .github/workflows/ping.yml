@@ -11,4 +11,4 @@ jobs:
     
     steps:
       - name: Ping media-service
-        run: curl -s -o /dev/null -w "%{http_code}" https://media-service-1vmx.onrender.com/api/health || true
+        run: curl -s -o /dev/null -w "%{http_code}" https://media-service-1vmx.onrender.com/api/health
